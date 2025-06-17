@@ -1,0 +1,56 @@
+WITH scored AS (
+    SELECT *,
+        -- Score basé sur deviation_nb_trades
+        CASE
+            WHEN deviation_nb_trades < 10 THEN 0
+            WHEN deviation_nb_trades < 30 THEN 5
+            WHEN deviation_nb_trades < 100 THEN 10
+            ELSE 15
+        END AS score_nb_trades,
+
+        -- Score basé sur deviation_sum_amount
+        CASE
+            WHEN deviation_sum_amount < 20 THEN 0
+            WHEN deviation_sum_amount < 50 THEN 5
+            WHEN deviation_sum_amount < 150 THEN 10
+            WHEN deviation_sum_amount < 400 THEN 15
+            WHEN deviation_sum_amount < 1000 THEN 20
+            ELSE 25
+        END AS score_sum_amount,
+
+        -- Score basé sur deviation_max_amount
+        CASE
+            WHEN deviation_max_amount < 10 THEN 0
+            WHEN deviation_max_amount < 20 THEN 5
+            WHEN deviation_max_amount < 35 THEN 10
+            WHEN deviation_max_amount < 50 THEN 15
+            WHEN deviation_max_amount < 150 THEN 17
+            ELSE 20
+        END AS score_max_amount,
+
+        -- Score basé sur le nombre d’exchanges
+        CASE
+            WHEN cardinality(new_exchange_list) < 1 THEN 0
+            WHEN cardinality(new_exchange_list) < 2 THEN 2
+            WHEN cardinality(new_exchange_list) < 3 THEN 7
+            ELSE 10
+        END AS score_exchange,
+
+        -- Score basé sur le nombre de produits
+        CASE
+            WHEN cardinality(new_product_list) < 4 THEN 0
+            WHEN cardinality(new_product_list) < 8 THEN 3
+            WHEN cardinality(new_product_list) < 10 THEN 5
+            ELSE 7
+        END AS score_product
+    FROM source_df
+),
+
+scored_with_total AS (
+    SELECT *,
+        score_nb_trades + score_sum_amount + score_max_amount + score_exchange + score_product AS score_total_deviation
+    FROM scored
+)
+
+SELECT *
+FROM scored_with_total;
